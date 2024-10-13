@@ -34,7 +34,7 @@ const visibleCount = computed(() => {
 // 偏移量
 const startOffset = ref(0)
 // 偏移量对应的style：滚动后偏移多少子项元素 需要增补回来
-const getTransform = computed(() => `translate3d(0,${startOffset.value}px,0)`)
+const getTransform = computed(() => `translate(0,${startOffset.value}px)`)
 
 // 容器实例
 const containerRef = useTemplateRef<HTMLDivElement | null>('container')
