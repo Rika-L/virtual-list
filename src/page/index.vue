@@ -21,14 +21,27 @@ const itemHeight = ref(60)
 // 虚拟列表高度
 const phantomHeight = ref(0)
 
-// 可视区数据
-const visibleData = computed(() => {
-  return arrayData.slice(visibleInfo.start, visibleInfo.end)
-})
+// 缓冲区比例
+const bufferRatio = 0.2
 
 // 可视区渲染个数
 const visibleCount = computed(() => {
   return Math.ceil(visibleInfo.height / itemHeight.value)
+})
+
+// 前置缓冲区个数
+const beforeBufferCount = computed(
+  () => Math.min(visibleInfo.start, Math.floor(bufferRatio * visibleCount.value)),
+)
+
+// 后置缓冲区个数
+const afterBufferCount = computed(
+  () => Math.min(arrayData.length - visibleInfo.end, Math.floor(bufferRatio * visibleCount.value)),
+)
+
+// 可视区数据
+const visibleData = computed(() => {
+  return arrayData.slice(visibleInfo.start - beforeBufferCount.value, visibleInfo.end + afterBufferCount.value)
 })
 
 // 偏移量
@@ -43,15 +56,25 @@ function hdlScroll(event: Event) {
   const scrollTop = (event.target! as HTMLDivElement).scrollTop
   visibleInfo.start = Math.floor(scrollTop / itemHeight.value)
   visibleInfo.end = visibleInfo.start + visibleCount.value
-  startOffset.value = visibleInfo.start * itemHeight.value
+  startOffset.value = getOffsetY()
 }
 
 function initial() {
-  // 初始化
   visibleInfo.height = containerRef.value!.clientHeight
   phantomHeight.value = arrayData.length * itemHeight.value
   visibleInfo.start = 0
   visibleInfo.end = visibleCount.value
+}
+
+function getOffsetY() {
+  // 实际滑出可视区个数
+  const realStart = visibleInfo.start - beforeBufferCount.value
+  if (realStart) {
+    return realStart * itemHeight.value
+  }
+  else {
+    return 0
+  }
 }
 
 onMounted(() => {
@@ -64,6 +87,8 @@ onMounted(() => {
   <div>列表高度： {{ phantomHeight }}</div>
   <div>Start {{ visibleInfo.start }} End {{ visibleInfo.end }}</div>
   <div>可视区渲染个数: {{ visibleCount }}</div>
+  <div>前置缓冲区个数: {{ beforeBufferCount }}</div>
+  <div>后置缓冲区个数: {{ afterBufferCount }}</div>
   <div ref="container" class="w-[600px] h-[600px] scroll-smooth overflow-auto relative bg-cyan-400" @scroll="hdlScroll">
     <div :style="{ height: `${phantomHeight}px` }">
       <div class="absolute top-0 left-0 w-full bg-cyan-300" :style="{ transform: getTransform }">
